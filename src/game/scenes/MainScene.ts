@@ -14,6 +14,8 @@ export class MainScene extends Phaser.Scene {
   line?: Line;
   floor?: Floor;
 
+  gameOver = false;
+
   create() {
     this.floor = new Floor(this);
     this.cameras.main.startFollow(this.floor, true, 0, 0, 0, CAMERA_OFFSET);
@@ -70,6 +72,7 @@ export class MainScene extends Phaser.Scene {
         if (isFloor(pair)) {
           this.scene.restart();
         }
+
         if (!block.getData("fallen")) {
           block.setData("fallen", true);
 
@@ -111,8 +114,10 @@ export class MainScene extends Phaser.Scene {
 
     const block = new Block(this, config.x, config.y, width, height, 0xFFFFFF);
     this.matter.add.gameObject(block, {
-      restitution: 0.7,
-      mass: 1,
+      restitution: 0.5,
+      density: 0.005,
+      friction: 1,
+      frictionStatic: 1,
       label: Labels.block,
       onCollideCallback: (pair: Pair) => {
         config.onCollide?.(pair);
