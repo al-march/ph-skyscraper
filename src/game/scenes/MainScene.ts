@@ -1,6 +1,7 @@
 import {Floor} from "../entities/Floor";
 import {Labels} from "../constants/labels";
 import {GAME_HEIGHT, GAME_WIDTH} from "../constants/index";
+import {Line} from "../entities/Line";
 
 type Pair = Phaser.Types.Physics.Matter.MatterCollisionPair;
 
@@ -12,6 +13,7 @@ export class MainScene extends Phaser.Scene {
 
   activeBlock?: Phaser.GameObjects.GameObject;
   activeBlockTween?: Phaser.Tweens.Tween;
+  line?: Line;
 
   create() {
     this.cameras.main.centerOn(0, 0);
@@ -20,7 +22,7 @@ export class MainScene extends Phaser.Scene {
 
     this.createActiveBlock();
     this.createBlock({x: 0, y: GAME_HEIGHT / 2 - 50});
-
+    this.line = new Line(this);
 
     const onClick = () => {
       const body = this.activeBlock?.body;
@@ -40,6 +42,22 @@ export class MainScene extends Phaser.Scene {
     });
   }
 
+  update() {
+    if (
+      this.activeBlock
+      && this.activeBlockTween?.isActive()
+      && this.activeBlock instanceof Phaser.GameObjects.Rectangle
+      && this.line
+    ) {
+      const startX = this.activeBlock.x;
+      const startY = this.activeBlock.y;
+
+      this.line.draw(startX, startY);
+    }
+
+    this.line?.setVisible(!!this.activeBlockTween?.isActive());
+  }
+
   createActiveBlock() {
     const block = this.createBlock({
       x: -GAME_WIDTH / 5,
@@ -54,6 +72,7 @@ export class MainScene extends Phaser.Scene {
         }
       }
     });
+
     if (block.body) {
       this.matter.body.setStatic(block.body as MatterJS.BodyType, true);
     }
@@ -72,7 +91,7 @@ export class MainScene extends Phaser.Scene {
     const width = Phaser.Math.FloatBetween(120, 220);
     const height = Phaser.Math.FloatBetween(30, 60);
 
-    return this.matter.add.gameObject(
+    const obj = this.matter.add.gameObject(
       this.add.rectangle(config.x, config.y, width, height, 0xFFFFFF), {
         restitution: 0.9,
         mass: 2,
@@ -82,6 +101,8 @@ export class MainScene extends Phaser.Scene {
         }
       }
     );
+    obj.setName(Labels.block);
+    return obj;
   }
 }
 
