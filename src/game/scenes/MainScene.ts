@@ -5,24 +5,27 @@ import {Line} from "../entities/Line";
 
 type Pair = Phaser.Types.Physics.Matter.MatterCollisionPair;
 
-export class MainScene extends Phaser.Scene {
-  startBlock = {
-    x: 0,
-    y: -GAME_HEIGHT / 2 + 100
-  };
+const CAMERA_OFFSET = GAME_HEIGHT / 2;
 
+export class MainScene extends Phaser.Scene {
   activeBlock?: Phaser.GameObjects.GameObject;
   activeBlockTween?: Phaser.Tweens.Tween;
   line?: Line;
+  floor?: Floor;
 
   create() {
-    this.cameras.main.centerOn(0, 0);
+    this.floor = new Floor(this);
+    this.cameras.main.startFollow(this.floor, true, 0, 0, 0, CAMERA_OFFSET);
 
     new Floor(this);
 
-    this.createActiveBlock();
-    this.createBlock({x: 0, y: GAME_HEIGHT / 2 - 50});
     this.line = new Line(this);
+
+    this.createBlock({x: 0, y: GAME_HEIGHT / 2 - 150});
+
+    this.cameras.main.once("followupdate", () => {
+      this.createActiveBlock();
+    });
 
     const onClick = () => {
       const body = this.activeBlock?.body;
@@ -61,14 +64,28 @@ export class MainScene extends Phaser.Scene {
   createActiveBlock() {
     const block = this.createBlock({
       x: -GAME_WIDTH / 5,
-      y: this.startBlock.y,
+      y: this.cameras.main.worldView.y + 50,
       onCollide: (pair) => {
         if (isFloor(pair)) {
           this.scene.restart();
         }
         if (!block.getData("fallen")) {
           block.setData("fallen", true);
-          this.createActiveBlock();
+
+          const cam = this.cameras.main;
+          const oldZoom = cam.zoom;
+          const newZoom = oldZoom * (cam.height / (cam.height + block.height));
+
+          this.tweens.add({
+            targets: this.cameras.main,
+            zoom: newZoom,
+            scrollY: cam.scrollY - block.height / 2,
+            duration: 300,
+            ease: "cubicInOut",
+            onComplete: () => {
+              this.createActiveBlock();
+            }
+          });
         }
       }
     });
@@ -93,7 +110,7 @@ export class MainScene extends Phaser.Scene {
 
     const obj = this.matter.add.gameObject(
       this.add.rectangle(config.x, config.y, width, height, 0xFFFFFF), {
-        restitution: 0.9,
+        restitution: 0.7,
         mass: 2,
         label: Labels.block,
         onCollideCallback: (pair: Pair) => {
@@ -102,7 +119,7 @@ export class MainScene extends Phaser.Scene {
       }
     );
     obj.setName(Labels.block);
-    return obj;
+    return obj as Phaser.GameObjects.Rectangle;
   }
 }
 

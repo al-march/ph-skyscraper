@@ -3,7 +3,7 @@ import {Labels} from "../constants/labels";
 
 export class Floor extends Phaser.GameObjects.Rectangle {
   constructor(scene: Phaser.Scene) {
-    super(scene, 0, GAME_HEIGHT / 2, GAME_WIDTH, 10, 0xdedede);
+    super(scene, 0, GAME_HEIGHT / 2 - 50, GAME_WIDTH, 10, 0xdedede);
 
     this.scene.add.existing(this);
     this.setName(Labels.floor);
