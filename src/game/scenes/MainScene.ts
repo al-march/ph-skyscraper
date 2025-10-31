@@ -1,7 +1,8 @@
 import {Floor} from "../entities/Floor";
-import {Labels} from "../constants/labels";
 import {GAME_HEIGHT, GAME_WIDTH} from "../constants/index";
 import {Line} from "../entities/Line";
+import {Block} from "../entities/Block";
+import {Labels} from "../constants/labels";
 
 type Pair = Phaser.Types.Physics.Matter.MatterCollisionPair;
 
@@ -108,18 +109,16 @@ export class MainScene extends Phaser.Scene {
     const width = Phaser.Math.FloatBetween(120, 220);
     const height = Phaser.Math.FloatBetween(30, 60);
 
-    const obj = this.matter.add.gameObject(
-      this.add.rectangle(config.x, config.y, width, height, 0xFFFFFF), {
-        restitution: 0.7,
-        mass: 2,
-        label: Labels.block,
-        onCollideCallback: (pair: Pair) => {
-          config.onCollide?.(pair);
-        }
+    const block = new Block(this, config.x, config.y, width, height, 0xFFFFFF);
+    this.matter.add.gameObject(block, {
+      restitution: 0.7,
+      mass: 1,
+      label: Labels.block,
+      onCollideCallback: (pair: Pair) => {
+        config.onCollide?.(pair);
       }
-    );
-    obj.setName(Labels.block);
-    return obj as Phaser.GameObjects.Rectangle;
+    });
+    return block;
   }
 }
 
