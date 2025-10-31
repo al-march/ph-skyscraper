@@ -13,10 +13,12 @@ export class MainScene extends Phaser.Scene {
   activeBlockTween?: Phaser.Tweens.Tween;
   line?: Line;
   floor?: Floor;
+  text?: Phaser.GameObjects.Text;
 
-  gameOver = false;
+  distance = 0;
 
   create() {
+    this.distance = 0;
     this.floor = new Floor(this);
     this.cameras.main.startFollow(this.floor, true, 0, 0, 0, CAMERA_OFFSET);
 
@@ -25,6 +27,13 @@ export class MainScene extends Phaser.Scene {
     this.line = new Line(this);
 
     this.createBlock({x: 0, y: GAME_HEIGHT / 2 - 150});
+    this.text = this.add.text(this.cameras.main.width / 2, GAME_HEIGHT / 2, "0", {
+      fontSize: 200,
+      fontStyle: "bold",
+      color: "gray",
+    })
+      .setOrigin(0.5, 0.5)
+      .setScrollFactor(0);
 
     this.cameras.main.once("followupdate", () => {
       this.createActiveBlock();
@@ -62,6 +71,8 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.line?.setVisible(!!this.activeBlockTween?.isActive());
+
+    this.text?.setText(`${this.distance.toFixed()}m`);
   }
 
   createActiveBlock() {
@@ -75,6 +86,7 @@ export class MainScene extends Phaser.Scene {
 
         if (!block.getData("fallen")) {
           block.setData("fallen", true);
+          this.distance += block.height;
 
           const cam = this.cameras.main;
           const oldZoom = cam.zoom;
