@@ -96,7 +96,7 @@ export class MainScene extends Phaser.Scene {
             targets: this.cameras.main,
             zoom: newZoom,
             scrollY: cam.scrollY - block.height / 2,
-            duration: 300,
+            duration: 150,
             ease: "cubicInOut",
             onComplete: () => {
               this.createActiveBlock();
