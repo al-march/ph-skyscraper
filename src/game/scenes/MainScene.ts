@@ -1,12 +1,10 @@
 import {Floor} from "../entities/Floor";
-import {GAME_HEIGHT, GAME_WIDTH} from "../constants/index";
+import {BLOCK_HEIGHT, BLOCK_WIDTH, GAME_HEIGHT, GAME_WIDTH} from "../constants/index";
 import {Line} from "../entities/Line";
 import {Block} from "../entities/Block";
 import {Labels} from "../constants/labels";
 
 type Pair = Phaser.Types.Physics.Matter.MatterCollisionPair;
-
-const CAMERA_OFFSET = GAME_HEIGHT / 2;
 
 export class MainScene extends Phaser.Scene {
   activeBlock?: Phaser.GameObjects.GameObject;
@@ -15,14 +13,16 @@ export class MainScene extends Phaser.Scene {
   floor?: Floor;
   text?: Phaser.GameObjects.Text;
 
-  distance = 0;
+  count = 0;
+
+  get distance() {
+    return this.count * BLOCK_HEIGHT;
+  }
 
   create() {
-    this.distance = 0;
-    this.floor = new Floor(this);
-    this.cameras.main.startFollow(this.floor, true, 0, 0, 0, CAMERA_OFFSET);
-
-    new Floor(this);
+    this.count = 0;
+    this.floor = new Floor(this, 0, GAME_HEIGHT / 2);
+    this.cameras.main.centerOn(0, 0);
 
     this.line = new Line(this);
 
@@ -35,7 +35,7 @@ export class MainScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setScrollFactor(0);
 
-    this.cameras.main.once("followupdate", () => {
+    setTimeout(() => {
       this.createActiveBlock();
     });
 
@@ -71,14 +71,13 @@ export class MainScene extends Phaser.Scene {
     }
 
     this.line?.setVisible(!!this.activeBlockTween?.isActive());
-
     this.text?.setText(`${this.distance.toFixed()}m`);
   }
 
   createActiveBlock() {
     const block = this.createBlock({
       x: -GAME_WIDTH / 5,
-      y: this.cameras.main.worldView.y + 50,
+      y: this.cameras.main.worldView.y + BLOCK_HEIGHT,
       onCollide: (pair) => {
         if (isFloor(pair)) {
           this.scene.restart();
@@ -86,21 +85,17 @@ export class MainScene extends Phaser.Scene {
 
         if (!block.getData("fallen")) {
           block.setData("fallen", true);
-          this.distance += block.height;
+          this.count += 1;
 
-          const cam = this.cameras.main;
-          const oldZoom = cam.zoom;
-          const newZoom = oldZoom * (cam.height / (cam.height + block.height));
+          const newZoom = GAME_HEIGHT / (GAME_HEIGHT + this.distance);
 
+          this.createActiveBlock();
           this.tweens.add({
             targets: this.cameras.main,
             zoom: newZoom,
-            scrollY: cam.scrollY - block.height / 2,
             duration: 150,
+            scrollY: this.cameras.main.scrollY - BLOCK_HEIGHT / 2,
             ease: "cubicInOut",
-            onComplete: () => {
-              this.createActiveBlock();
-            }
           });
         }
       }
@@ -121,10 +116,15 @@ export class MainScene extends Phaser.Scene {
   }
 
   createBlock(config: { x: number, y: number, onCollide?: (pair: Pair) => void }) {
-    const width = Phaser.Math.FloatBetween(120, 220);
-    const height = Phaser.Math.FloatBetween(30, 60);
+    const block = new Block(
+      this,
+      config.x,
+      config.y,
+      BLOCK_WIDTH,
+      BLOCK_HEIGHT,
+      0xFFFFFF
+    );
 
-    const block = new Block(this, config.x, config.y, width, height, 0xFFFFFF);
     this.matter.add.gameObject(block, {
       restitution: 0.5,
       density: 0.005,
